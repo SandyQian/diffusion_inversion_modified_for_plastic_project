@@ -82,7 +82,7 @@ def interpolation_sample(dataset_name, model_root_dir, outdir='inversion_data/ci
             y_t.append(i)
             
         emb_path = os.path.join(
-            model_root_dir, f'group{group_id}', f'learned_embeds-steps-{train_steps*20}.bin')
+            model_root_dir, f'group{group_id}', f'learned_embeds-steps-{train_steps*2}.bin')
     
     elif dataset_name in ['pathmnist', 'dermamnist', 'bloodmnist']:
         info = INFO[dataset_name]

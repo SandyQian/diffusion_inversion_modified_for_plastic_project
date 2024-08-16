@@ -11,6 +11,7 @@ import torch
 import torch.nn.functional as F
 import torch.utils.checkpoint
 from torch.utils.data import Dataset
+# tfds = __import__("tensorflow-datasets")
 import tensorflow_datasets as tfds
 
 import datasets
@@ -48,7 +49,7 @@ def D(**kwargs):
     return ml_collections.ConfigDict(initial_dictionary=kwargs)
 ####### Modification (END) #######
 
-
+#Code to handle library difference due to lib version
 if version.parse(version.parse(PIL.__version__).base_version) >= version.parse("9.1.0"):
     PIL_INTERPOLATION = {
         "linear": PIL.Image.Resampling.BILINEAR,
@@ -66,16 +67,16 @@ else:
         "nearest": PIL.Image.NEAREST,
     }
 # ------------------------------------------------------------------------------
-logger = get_logger(__name__)
+logger = get_logger(__name__) #__name__ is the name of the module that the program is running 
 
-
+#A function that tiles a batch of images into a single image.
 def np_tile_imgs(imgs, *, pad_pixels=1, pad_val=255, num_col=0):
     """NumPy utility: tile a batch of images into a single image.
 
     Args:
       imgs: np.ndarray: a uint8 array of images of shape [n, h, w, c]
-      pad_pixels: int: number of pixels of padding to add around each image
-      pad_val: int: padding value
+      pad_pixels: int: number of pixels of padding (extra white rim/space around img) to add around each image
+      pad_val: int: padding value (255 -> white)
       num_col: int: number of columns in the tiling; defaults to a square
 
     Returns:
@@ -144,7 +145,7 @@ def save_progress(emb_model, accelerator, save_path):
 def save_image(pipe, image_dir, step, num_emb, device, resolution):
     prompt = list(range(25))
     pipe.to(device)
-    # for guidance_scale in [2.0, 4.0]:
+    # for guidance_scale in [2.0, 4.0]:(guidane scale = guidance strength. Within 2-4 is optimum as starting point)
     for guidance_scale in [2.0]:
         filename = os.path.join(
             image_dir, f'{step:05d}_gs{guidance_scale}.jpg')
@@ -463,6 +464,28 @@ class EmbDataset(Dataset):
             cls_idx = np.where(y_train == group_id)[0][0:group_size]
             x_t = x_train[cls_idx]
             y_t = y_train[cls_idx]
+        
+        elif dataset_name is None:  # or a specific check for your custom dataset
+            # Handle custom dataset
+            custom_data_path = '/path/to/your/custom/dataset'
+            num_classes = <number_of_classes>  # Set this based on your custom dataset
+            class_map = {i: [] for i in range(num_classes)}
+            
+            # Load your custom dataset here, for example using PyTorch or any other method:
+            import os
+            from PIL import Image
+
+            # Example assuming a folder structure like custom_data_path/class_x/img_y.jpg
+            x_t = []
+            y_t = []
+            for class_id, class_name in enumerate(os.listdir(custom_data_path)):
+                class_folder = os.path.join(custom_data_path, class_name)
+                for img_name in os.listdir(class_folder):
+                    img_path = os.path.join(class_folder, img_name)
+                    img = Image.open(img_path)
+                    # Apply any necessary preprocessing to `img` here
+                    x_t.append(img)
+                    y_t.append(class_id)
         else:
             config = D(
                 name=dataset_name,
@@ -534,7 +557,7 @@ def main():
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         mixed_precision=args.mixed_precision,
         log_with=args.report_to,
-        logging_dir=logging_dir,
+        project_dir=logging_dir,
     )
 
     # Make one log on every process with the configuration for debugging.
@@ -840,4 +863,5 @@ def main():
 
 
 if __name__ == "__main__":
+    torch.cuda.empty_cache() #clean GPU cache
     main()

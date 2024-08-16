@@ -36,12 +36,19 @@ conda activate di
 ```
 
 ### Training
-
 ```bash
-path="--pretrained_model_name_or_path=CompVis/stable-diffusion-v1-4 --output_dir=$PROJDIR/diffusion_inversion/logs/stl10 --dataset_name=stl10 --data_dir=~/tensorflow_datasets"
-args="--gradient_accumulation_steps=1 --num_tokens=5 --resolution=256 --train_batch_size=50 --num_emb=100 --max_train_steps=8000"
-lr="--lr_warmup_steps=0 --interpolation=bicubic --lr_scheduler=constant --learning_rate=3e-02"
-log="--checkpointing_steps=1000 --save_steps=1000 --save_image_steps=400 --resume_from_checkpoint=latest"
+$PROJDIR= 'E:/XJTLU intern/training_record_DM_inv'
+$path="--pretrained_model_name_or_path=CompVis/stable-diffusion-v1-4", "--output_dir=$PROJDIR/diffusion_inversion/logs/stl10", "--dataset_name=stl10","--data_dir=~/tensorflow_datasets"
+$argus="--gradient_accumulation_steps=2", "--num_tokens=5", "--resolution=256", "--train_batch_size=10", "--num_emb=100", "--max_train_steps=3000"
+$lr="--lr_warmup_steps=0", "--interpolation=bicubic", "--lr_scheduler=constant", "--learning_rate=3e-02"
+$log="--checkpointing_steps=1000", "--save_steps=1000", "--save_image_steps=400", "--resume_from_checkpoint=latest"
+
+#With own data set
+$PROJDIR= 'E:/XJTLU intern/training_record_DM_inv'
+$path="--pretrained_model_name_or_path=CompVis/stable-diffusion-v1-4", "--output_dir=$PROJDIR/diffusion_inversion/logs/plastic_data", "--dataset_name=plastic_data","--data_dir=E:\XJTLU intern\2249501_XiaohanXu_Datasets\5Class_label_format"
+$argus="--gradient_accumulation_steps=1", "--num_tokens=5", "--resolution=256", "--train_batch_size=10", "--num_emb=100", "--max_train_steps=3000"
+$lr="--lr_warmup_steps=0", "--interpolation=bicubic", "--lr_scheduler=constant", "--learning_rate=3e-02"
+$log="--checkpointing_steps=1000", "--save_steps=1000", "--save_image_steps=400", "--resume_from_checkpoint=latest"
 
 accelerate launch src/diffuser_inversion.py $path $args $lr $log --group_id=0
 ...
@@ -51,9 +58,9 @@ accelerate launch src/diffuser_inversion.py $path $args $lr $log --group_id=50
 ### Sampling
 
 ```bash
-path="--dataset_name=stl10 --model_root_dir=$PROJDIR/diffusion_inversion/logs/stl10/res256_bicubic/emb100_token5_lr0.03_constant --dm_name=CompVis/stable-diffusion-v1-4"
-train_config="--emb_ch=768 --num_tokens=5 --num_classes=10 --num_emb=100 --sampling_resolution=256 --save_resolution=96  --outdir=$PROJDIR/inversion_data/stl10/scaling"
-sampling_config="--num_inference_steps=100 --batch_size=100 --interpolation_strength=0.1 --num_samples=5 --emb_noise=0.1 --train_steps=3000 --seed=42"
+$path="--dataset_name=stl10", "--model_root_dir=E:\XJTLU intern\training_record_DM_inv\diffusion_inversion\logs\stl10\res256_bicubic\emb100_token5_lr0.03_constant", "--dm_name=CompVis/stable-diffusion-v1-4"
+$train_config="--emb_ch=768", "--num_tokens=5", "--num_classes=10", "--num_emb=100", "--sampling_resolution=256", "--save_resolution=96",  "--outdir=E:/XJTLU intern/training_record_DM_inv/diffusion_inversion/logs/stl10/inversion_data/stl10/scaling"
+$sampling_config="--num_inference_steps=100", "--batch_size=100", "--interpolation_strength=0.1", "--num_samples=5", "--emb_noise=0.1", "--train_steps=2000", "--seed=42"
 
 python sample_dataset.py $path $train_config $sampling_config --group_id=0
 ...
