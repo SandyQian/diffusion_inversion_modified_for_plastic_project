@@ -464,28 +464,6 @@ class EmbDataset(Dataset):
             cls_idx = np.where(y_train == group_id)[0][0:group_size]
             x_t = x_train[cls_idx]
             y_t = y_train[cls_idx]
-        
-        elif dataset_name is None:  # or a specific check for your custom dataset
-            # Handle custom dataset
-            custom_data_path = '/path/to/your/custom/dataset'
-            num_classes = <number_of_classes>  # Set this based on your custom dataset
-            class_map = {i: [] for i in range(num_classes)}
-            
-            # Load your custom dataset here, for example using PyTorch or any other method:
-            import os
-            from PIL import Image
-
-            # Example assuming a folder structure like custom_data_path/class_x/img_y.jpg
-            x_t = []
-            y_t = []
-            for class_id, class_name in enumerate(os.listdir(custom_data_path)):
-                class_folder = os.path.join(custom_data_path, class_name)
-                for img_name in os.listdir(class_folder):
-                    img_path = os.path.join(class_folder, img_name)
-                    img = Image.open(img_path)
-                    # Apply any necessary preprocessing to `img` here
-                    x_t.append(img)
-                    y_t.append(class_id)
         else:
             config = D(
                 name=dataset_name,
