@@ -421,6 +421,11 @@ class EmbDataset(Dataset):
             for i in range(num_classes):
                 x_t.append(train_dataset[class_map[i][group_id]][0])
                 y_t.append(i)
+
+            #x_t: list of PIL image to be used 
+            #y_t: list of class_indices that corresponds to x_t
+
+
         elif dataset_name == 'eurosat':
             import torchvision.transforms as transforms
             from torchvision.transforms import InterpolationMode
