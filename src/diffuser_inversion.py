@@ -378,7 +378,7 @@ def load_data(ds, batch_size=1000):
 class EmbDataset(Dataset):
     def __init__(self, dataset_name, data_dir, 
                  group_id=None, num_emb=1000, size=512,
-                 interpolation='bicubic', center_crop=False, hflip=False):
+                 interpolation='bicubic', center_crop=False, hflip=False, load_strategy="class_specific", class_idx = 0):
         self.dataset_name = dataset_name
         self.data_dir = data_dir
         self.group_id = group_id
@@ -387,6 +387,8 @@ class EmbDataset(Dataset):
         self.interpolation = PIL_INTERPOLATION[interpolation]
         self.center_crop = center_crop
         self.hflip = hflip
+        self.load_strategy = load_strategy
+        self.class_idx = class_idx 
 
         if dataset_name == 'imagenet':
             import torchvision.transforms as transforms
@@ -464,6 +466,49 @@ class EmbDataset(Dataset):
             cls_idx = np.where(y_train == group_id)[0][0:group_size]
             x_t = x_train[cls_idx]
             y_t = y_train[cls_idx]
+
+        elif dataset_name == 'custom':
+            from torchvision.transforms import v2
+            from torchvision.transforms import InterpolationMode
+            from torchvision.datasets import ImageFolder
+
+            if self.load_strategy not in ['class_specific', 'class_balanced']:
+                raise Exception('Input is expected to be string and should be either "class_specific" or "class_balanced".')
+            
+            TORCH_INTERPOLATION = {"linear": InterpolationMode.BILINEAR,
+                                   "bilinear": InterpolationMode.BILINEAR,
+                                   "bicubic": InterpolationMode.BICUBIC,
+                                   "lanczos": InterpolationMode.LANCZOS,
+                                   "nearest": InterpolationMode.NEAREST}
+            image_path = data_dir
+            transform = v2.Compose([
+			v2.Resize(size, interpolation=TORCH_INTERPOLATION[interpolation], antialias=True),
+	        v2.CenterCrop(size),
+	        # transforms.ToTensor(),
+			])
+
+            train_dataset = ImageFolder(image_path, transform=transform)
+            class_list = train_dataset.classes
+			num_classess = len(class_list)
+			class_map = {i: [] for i in range(num_classes)}
+            
+            for i, label in enumerate(train_dataset.targets):
+                class_map[label].append(i)
+            print({i: len(class_map[i]) for i in range(num_classes)})
+
+            if self.load_strategy == 'class_balanced':
+                x_t = []
+                y_t = []
+                for i in range(num_classes):
+                    x_t.append(train_dataset[class_map[i][group_id]][0])
+                    y_t.append(i)
+
+            if self.load_strategy == 'class_specific':
+                class_picked = self.class_idx
+                dataset_idx_list = class_map[class_picked][group_id*num_emb:(group_id+1)*num_emb]
+                x_t = [train_dataset[idx][0] for idx in dataset_idx_list]
+                y_t = [class_picked]*num_emb
+            
         else:
             config = D(
                 name=dataset_name,
