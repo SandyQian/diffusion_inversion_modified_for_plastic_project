@@ -160,6 +160,7 @@ def parse_args():
         description="Simple example of a training script.")
     #### New arguments (START) ####
     parser.add_argument("--num_emb", type=int, default=10)
+    parser.add_argument("--load_strategy", type=str, default='class_specific')
     parser.add_argument("--num_tokens", type=int, default=3)
     parser.add_argument("--group_id", type=int, default=None)
     parser.add_argument("--interpolation", type=str,
@@ -378,7 +379,7 @@ def load_data(ds, batch_size=1000):
 class EmbDataset(Dataset):
     def __init__(self, dataset_name, data_dir, 
                  group_id=None, num_emb=1000, size=512,
-                 interpolation='bicubic', center_crop=False, hflip=False, load_strategy="class_specific", class_idx = 0):
+                 interpolation='bicubic', center_crop=False, hflip=False, load_strategy="class_specific"):
         self.dataset_name = dataset_name
         self.data_dir = data_dir
         self.group_id = group_id
@@ -388,7 +389,6 @@ class EmbDataset(Dataset):
         self.center_crop = center_crop
         self.hflip = hflip
         self.load_strategy = load_strategy
-        self.class_idx = class_idx 
 
         if dataset_name == 'imagenet':
             import torchvision.transforms as transforms
@@ -494,7 +494,7 @@ class EmbDataset(Dataset):
 
             train_dataset = ImageFolder(image_path, transform=transform)
             class_list = train_dataset.classes
-			num_classess = len(class_list)
+			num_classes = len(class_list)
 			class_map = {i: [] for i in range(num_classes)}
             
             for i, label in enumerate(train_dataset.targets):
@@ -504,15 +504,19 @@ class EmbDataset(Dataset):
             if self.load_strategy == 'class_balanced':
                 x_t = []
                 y_t = []
+                img_per_cls = num_emb//num_classes
+                # print(img_per_cls)
                 for i in range(num_classes):
-                    x_t.append(train_dataset[class_map[i][group_id]][0])
-                    y_t.append(i)
+                    img_idx_list = class_map[i][0:img_per_cls]
+                    for idx in img_idx_list:   
+                        img = train_dataset[idx][0]
+                        x_t.append(img)
+                        y_t.append(i)
 
             if self.load_strategy == 'class_specific':
-                class_picked = self.class_idx
-                dataset_idx_list = class_map[class_picked][group_id*num_emb:(group_id+1)*num_emb]
+                dataset_idx_list = class_map[group_id][0:num_emb]
                 x_t = [train_dataset[idx][0] for idx in dataset_idx_list]
-                y_t = [class_picked]*num_emb
+                y_t = [group_id]*num_emb
             
         else:
             config = D(
@@ -655,6 +659,7 @@ def main():
                                data_dir=args.data_dir,
                                group_id=args.group_id,
                                num_emb=args.num_emb,
+                               load_strategy=args.load_strategy,
                                size=args.resolution,
                                interpolation=args.interpolation)
     train_dataloader = torch.utils.data.DataLoader(
